@@ -18,8 +18,6 @@ def sanitize_filename(filename):
 
 
 def download_file(url, save_directory="."):
-    save_directory = sanitize_filename(save_directory)
-    
     filename = os.path.basename(url)
     save_path = os.path.join(save_directory, filename)
 
@@ -122,8 +120,7 @@ async def getWCatWallpaper(index=0):
                 url = f"https://colopl.co.jp{WCatNews[index]["link"]}{wallpaper["image"][2:]}"
             else :
                 url = f"https://colopl.co.jp{wallpaper["image"]}"
-            
-            download_file(url, save_directory=f"downloads\\{WCatNews[index]["title"]}")
+            download_file(url, save_directory=f"downloads\\{sanitize_filename(WCatNews[index]["title"])}")
             print(url)
 
 if __name__ == "__main__":
