@@ -3,16 +3,24 @@ import json
 from crawl4ai import AsyncWebCrawler
 from crawl4ai.extraction_strategy import JsonCssExtractionStrategy
 
+import re
+
 import os
 import requests
 
 import argparse
 
 
+def sanitize_filename(filename):
+    invalid_chars = r'[<>:"/\\|?*]'
+    sanitized_filename = re.sub(invalid_chars, "-", filename)
+    return sanitized_filename
+
+
 def download_file(url, save_directory="."):
-
+    save_directory = sanitize_filename(save_directory)
+    
     filename = os.path.basename(url)
-
     save_path = os.path.join(save_directory, filename)
 
     # 如果資料夾不存在，則建立一個資料夾
@@ -29,7 +37,12 @@ def download_file(url, save_directory="."):
         print(f"Download error, error code: {response.status_code}")
 
 
-async def getWCatWallpaper(index = 0):
+def replace_relative_path_with_url(path, base_url="https://example.com"):
+    if path.startswith("./"):
+        return base_url + path[1:]
+    return path
+
+async def getWCatWallpaper(index=0):
     schemaNews = {
         "name": "WCat News",
         "baseSelector": "li.entry",
@@ -103,18 +116,22 @@ async def getWCatWallpaper(index = 0):
 
     for Wallpapers in WCatWallpapers:
         for wallpaper in Wallpapers["wallpaper"]:
-            url = f"https://colopl.co.jp{wallpaper["image"]}"
-            download_file(url, save_directory=f"downloads\\{WCatNews[index]["title"]}")
-            # print(f"https://colopl.co.jp{wallpaper["image"]}")
-
+            # 判斷是否是相對路徑模式
+            url = None
+            if wallpaper["image"].startswith("./") :
+                url = f"https://colopl.co.jp{WCatNews[index]["link"]}{wallpaper["image"][2:]}"
+            else :
+                url = f"https://colopl.co.jp{wallpaper["image"]}"
+            
+            # download_file(url, save_directory=f"downloads\\{WCatNews[index]["title"]}")
+            print(url)
 
 if __name__ == "__main__":
-    # 設定 argparse 用來處理命令列參數
-    parser = argparse.ArgumentParser(description="Fetch wallpaper by ID")
-    parser.add_argument('-id', type=int, required=False, help="The ID of the wallpaper to fetch")
     
-    # 解析命令列參數
+    parser = argparse.ArgumentParser(description="Fetch wallpaper by ID")
+    parser.add_argument(
+        "-id", type=int, required=False, help="The ID of the wallpaper to fetch"
+    )
     args = parser.parse_args()
-    print(args.id)
-    # 執行主要的非同步函式，並將參數傳遞給它
+    
     asyncio.run(getWCatWallpaper(args.id))
