@@ -6,6 +6,8 @@ from crawl4ai.extraction_strategy import JsonCssExtractionStrategy
 import os
 import requests
 
+import argparse
+
 
 def download_file(url, save_directory="."):
 
@@ -27,7 +29,7 @@ def download_file(url, save_directory="."):
         print(f"Download error, error code: {response.status_code}")
 
 
-async def getWCatWallpaper():
+async def getWCatWallpaper(index = 0):
     schemaNews = {
         "name": "WCat News",
         "baseSelector": "li.entry",
@@ -88,7 +90,7 @@ async def getWCatWallpaper():
 
     async with AsyncWebCrawler(verbose=True) as crawler:
         result = await crawler.arun(
-            url=f"https://colopl.co.jp{WCatNews[1]["link"]}",
+            url=f"https://colopl.co.jp{WCatNews[index]["link"]}",
             extraction_strategy=extractionStrategyWallpapers,
             bypass_cache=True,
         )
@@ -96,15 +98,23 @@ async def getWCatWallpaper():
         WCatWallpapers = json.loads(result.extracted_content)
 
     print(f"Success, {len(WCatNews)} news")
-    print(json.dumps(WCatNews[1], indent=2, ensure_ascii=False))
+    print(json.dumps(WCatNews[index], indent=2, ensure_ascii=False))
     print(json.dumps(WCatWallpapers, indent=2, ensure_ascii=False))
 
     for Wallpapers in WCatWallpapers:
         for wallpaper in Wallpapers["wallpaper"]:
             url = f"https://colopl.co.jp{wallpaper["image"]}"
-            download_file(url, save_directory=f"downloads\\{WCatNews[1]["title"]}")
+            download_file(url, save_directory=f"downloads\\{WCatNews[index]["title"]}")
             # print(f"https://colopl.co.jp{wallpaper["image"]}")
 
 
 if __name__ == "__main__":
-    asyncio.run(getWCatWallpaper())
+    # 設定 argparse 用來處理命令列參數
+    parser = argparse.ArgumentParser(description="Fetch wallpaper by ID")
+    parser.add_argument('-id', type=int, required=False, help="The ID of the wallpaper to fetch")
+    
+    # 解析命令列參數
+    args = parser.parse_args()
+    print(args.id)
+    # 執行主要的非同步函式，並將參數傳遞給它
+    asyncio.run(getWCatWallpaper(args.id))
