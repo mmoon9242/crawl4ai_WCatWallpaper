@@ -56,7 +56,7 @@ async def getWCatWallpaper(index=0):
         "baseSelector": "li.entry",
         "fields": [
             {"name": "title", "selector": "h3.entryTitle", "type": "text"},
-            {"name": "date", "selector": "p.date", "type": "text"},
+            {"name": "date", "selector": "p.date", "type": "regex", "pattern": r"(\d{4}.\d{2}.\d{2})"},
             {
                 "name": "link",
                 "selector": "a[href]",
@@ -121,7 +121,7 @@ async def getWCatWallpaper(index=0):
     print(f"Success, {len(WCatNews)} news")
     print(json.dumps(WCatNews[index], indent=2, ensure_ascii=False))
     
-    savePath = f"{re.search(r"\d{4}\.\d{2}\.\d{2}", WCatNews[index]["date"]).group()}_{sanitize_filename(WCatNews[index]["title"])}"
+    savePath = f"{WCatNews[index]["date"]}_{sanitize_filename(WCatNews[index]["title"])}"
     
     if (
         is_line_equal("news.txt", savePath)
