@@ -39,7 +39,6 @@ def find_similar_dirs(base_dir, search_name):
             print(f"路徑不存在: {base_dir}")
             return []
 
-
         dirs = [
             d for d in os.listdir(base_dir) if os.path.isdir(os.path.join(base_dir, d))
         ]
@@ -176,20 +175,9 @@ async def getWCatWallpaper(WCatNewsUrl, startIndex=None, endIndex=None):
             WCatWallpapers = json.loads(result.extracted_content)
 
         savePath = f'{WCatNews[0]["news"][index]["date"]}_{sanitize_filename(WCatNews[0]["news"][index]["title"])}'
-        
-        if find_similar_dirs(f"downloads\\",savePath) :
-            print("目錄已經存在")
-            print("目錄已經存在")
-            print("目錄已經存在")
-            print("目錄已經存在")
-            print("目錄已經存在")
-            print("目錄已經存在")
-            print("目錄已經存在")
-            print("目錄已經存在")
-            
-        if is_line_equal("news.txt", savePath) and index == 0:
-            print("已下載過，未更新")
-            None
+
+        if find_similar_dirs(f"downloads\\", savePath):
+            print("已下載過，如要重新下載請刪除該目錄")
         else:
             if index == 0:
                 write_single_line("news.txt", savePath)
