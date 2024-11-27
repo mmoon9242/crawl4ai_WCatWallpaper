@@ -111,12 +111,12 @@ async def getWCatWallpaper(WCatNewsUrl, startIndex=None, endIndex=None):
     extractionStrategyNews = JsonCssExtractionStrategy(schemaNews, verbose=True)
     schemaWallpapers = {
         "name": "WCat Wallpapers",
-        "baseSelector": "li.p-wallpaper__listItem, div.wpArea li, li.motion.fadeInUp",
+        "baseSelector": "li.p-wallpaper__listItem, div.wpArea li, li.motion.fadeInUp, li.wallpaper__listItem",
         "fields": [
             {
                 "name": "wallpaper",
                 "type": "nested_list",
-                "selector": "li.p-wallpaper__linksItem, div.link p",
+                "selector": "li.p-wallpaper__linksItem, div.link p, div.wallpaper__download p",
                 "fields": [
                     {"name": "size", "selector": "a", "type": "text"},
                     {
@@ -152,10 +152,18 @@ async def getWCatWallpaper(WCatNewsUrl, startIndex=None, endIndex=None):
 
         WCatPageUrl = None
         # FIXME: URL會串錯
-        if WCatNews[0]["news"][index]["link"].startswith("http://") :
+        # TODO: 判斷字串是否是完整網址
+        if WCatNews[0]["news"][index]["link"].startswith("https://") :
+            # FIXME: 有的網址最後一個字元是/，須要移除
+            # TODO: 如果是，就直接寫入WCatPageUrl
             WCatPageUrl = WCatNews[0]["news"][index]["link"]
+            # TODO: 判斷WCatPageUrl有沒有包含C社網域
+            if not WCatPageUrl.startswith("https://colopl.co.jp") :
+                # TODO: 如果沒有就break
+                break
         else :
             WCatPageUrl = f'https://colopl.co.jp{WCatNews[0]["news"][index]["link"]}'
+        
         async with AsyncWebCrawler(verbose=True) as crawler:
             result = await crawler.arun(
                 url=WCatPageUrl,
