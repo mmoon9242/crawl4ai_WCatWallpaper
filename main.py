@@ -11,16 +11,6 @@ import requests
 import argparse
 
 
-def is_line_equal(file_path, target_string):
-    try:
-        with open(file_path, "r", encoding="utf-8") as file:
-            line = file.readline().strip()
-            return line == target_string
-    except FileNotFoundError:
-        print(f"No log file: {file_path}")
-        return False
-
-
 def find_similar_dirs(base_dir, search_name):
     """
     搜尋目錄中名稱部分匹配的目錄
@@ -174,8 +164,6 @@ async def getWCatWallpaper(WCatNewsUrl, startIndex=None, endIndex=None):
         if find_similar_dirs(f"downloads\\", savePath):
             print("已下載過，如要重新下載請刪除該目錄")
         else:
-            if index == 0:
-                write_single_line("news.txt", savePath)
 
             print(json.dumps(WCatWallpapers, indent=2, ensure_ascii=False))
 
