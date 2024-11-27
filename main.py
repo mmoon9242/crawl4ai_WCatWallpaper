@@ -163,6 +163,7 @@ async def getWCatWallpaper(WCatNewsUrl, startIndex=None, endIndex=None):
 
         if find_similar_dirs(f"downloads\\", savePath):
             print("已下載過，如要重新下載請刪除該目錄")
+            break
         else:
 
             print(json.dumps(WCatWallpapers, indent=2, ensure_ascii=False))
