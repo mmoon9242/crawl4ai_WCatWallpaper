@@ -56,7 +56,7 @@ async def getWCatWallpaper(index=0):
         "baseSelector": "li.entry",
         "fields": [
             {"name": "title", "selector": "h3.entryTitle", "type": "text"},
-            {"name": "time", "selector": ".date", "type": "text"},
+            {"name": "date", "selector": "p.date", "type": "text"},
             {
                 "name": "link",
                 "selector": "a[href]",
@@ -120,13 +120,21 @@ async def getWCatWallpaper(index=0):
 
     print(f"Success, {len(WCatNews)} news")
     print(json.dumps(WCatNews[index], indent=2, ensure_ascii=False))
-
-    if is_line_equal("news.txt", sanitize_filename(WCatNews[index]["title"])) and index == 0:
+    
+    savePath = f"{re.search(r"\d{4}\.\d{2}\.\d{2}", WCatNews[index]["date"]).group()}_{sanitize_filename(WCatNews[index]["title"])}"
+    
+    if (
+        is_line_equal("news.txt", savePath)
+        and index == 0
+    ):
         print("已下載過，未更新")
         None
     else:
-        if index == 0: write_single_line("news.txt", sanitize_filename(WCatNews[index]["title"]))
+        if index == 0:
+            write_single_line("news.txt", savePath)
+        
         print(json.dumps(WCatWallpapers, indent=2, ensure_ascii=False))
+        
         for Wallpapers in WCatWallpapers:
             for wallpaper in Wallpapers["wallpaper"]:
                 # 判斷是否是相對路徑模式
@@ -137,7 +145,7 @@ async def getWCatWallpaper(index=0):
                     url = f"https://colopl.co.jp{wallpaper["image"]}"
                 download_file(
                     url,
-                    save_directory=f"downloads\\{sanitize_filename(WCatNews[index]["title"])}",
+                    save_directory=f"downloads\\{savePath}",
                 )
 
 
