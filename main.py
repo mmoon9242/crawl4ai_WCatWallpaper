@@ -51,27 +51,40 @@ def download_file(url, save_directory="."):
 
 
 async def getWCatWallpaper(index=0):
+    # TODO: 改成整頁抓取，並且獲取下一頁的連結
     schemaNews = {
         "name": "WCat News",
-        "baseSelector": "li.entry",
+        "baseSelector": "body",
         "fields": [
-            {"name": "title", "selector": "h3.entryTitle", "type": "text"},
-            {"name": "date", "selector": "p.date", "type": "regex", "pattern": r"(\d{4}.\d{2}.\d{2})"},
             {
-                "name": "link",
-                "selector": "a[href]",
-                "type": "attribute",
-                "attribute": "href",
-            },
-            {
-                "name": "thumb",
-                "type": "nested",
-                "selector": "img",
+                "name": "news",
+                "type": "list",
+                "selector": "li.entry",
                 "fields": [
-                    {"name": "src", "type": "attribute", "attribute": "src"},
-                    {"name": "alt", "type": "attribute", "attribute": "alt"},
+                    {"name": "title", "selector": "h3.entryTitle", "type": "text"},
+                    {
+                        "name": "date",
+                        "selector": "p.date",
+                        "type": "regex",
+                        "pattern": r"(\d{4}.\d{2}.\d{2})",
+                    },
+                    {
+                        "name": "link",
+                        "selector": "a[href]",
+                        "type": "attribute",
+                        "attribute": "href",
+                    },
+                    {
+                        "name": "thumb",
+                        "type": "nested",
+                        "selector": "img",
+                        "fields": [
+                            {"name": "src", "type": "attribute", "attribute": "src"},
+                            {"name": "alt", "type": "attribute", "attribute": "alt"},
+                        ],
+                    },
                 ],
-            },
+            }
         ],
     }
     extractionStrategyNews = JsonCssExtractionStrategy(schemaNews, verbose=True)
@@ -108,7 +121,9 @@ async def getWCatWallpaper(index=0):
         )
         assert result.success, "WCat News error."
         WCatNews = json.loads(result.extracted_content)
-
+    
+    print(WCatNews)
+    
     async with AsyncWebCrawler(verbose=True) as crawler:
         result = await crawler.arun(
             url=f"https://colopl.co.jp{WCatNews[index]["link"]}",
@@ -118,23 +133,24 @@ async def getWCatWallpaper(index=0):
         assert result.success, "WCat Wallpapers error."
         WCatWallpapers = json.loads(result.extracted_content)
 
+    
+    
     print(f"Success, {len(WCatNews)} news")
     print(json.dumps(WCatNews[index], indent=2, ensure_ascii=False))
-    
-    savePath = f"{WCatNews[index]["date"]}_{sanitize_filename(WCatNews[index]["title"])}"
-    
-    if (
-        is_line_equal("news.txt", savePath)
-        and index == 0
-    ):
+
+    savePath = (
+        f"{WCatNews[index]["date"]}_{sanitize_filename(WCatNews[index]["title"])}"
+    )
+
+    if is_line_equal("news.txt", savePath) and index == 0:
         print("已下載過，未更新")
         None
     else:
         if index == 0:
             write_single_line("news.txt", savePath)
-        
+
         print(json.dumps(WCatWallpapers, indent=2, ensure_ascii=False))
-        
+
         for Wallpapers in WCatWallpapers:
             for wallpaper in Wallpapers["wallpaper"]:
                 # 判斷是否是相對路徑模式
