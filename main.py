@@ -123,7 +123,7 @@ async def getWCatWallpaper(index=0):
             else :
                 url = f"https://colopl.co.jp{wallpaper["image"]}"
             
-            # download_file(url, save_directory=f"downloads\\{WCatNews[index]["title"]}")
+            download_file(url, save_directory=f"downloads\\{WCatNews[index]["title"]}")
             print(url)
 
 if __name__ == "__main__":
