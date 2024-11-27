@@ -11,6 +11,21 @@ import requests
 import argparse
 
 
+def write_single_line(file_path, content):
+    with open(file_path, "w", encoding="utf-8") as file:
+        file.write(content)
+
+
+def is_line_equal(file_path, target_string):
+    try:
+        with open(file_path, "r", encoding="utf-8") as file:
+            line = file.readline().strip()  # 讀取檔案第一行並移除首尾空白
+            return line == target_string
+    except FileNotFoundError:
+        print(f"檔案 {file_path} 不存在")
+        return False
+
+
 def sanitize_filename(filename):
     invalid_chars = r'[<>:"/\\|?*]'
     sanitized_filename = re.sub(invalid_chars, "-", filename)
@@ -34,11 +49,6 @@ def download_file(url, save_directory="."):
     else:
         print(f"Download error, error code: {response.status_code}")
 
-
-def replace_relative_path_with_url(path, base_url="https://example.com"):
-    if path.startswith("./"):
-        return base_url + path[1:]
-    return path
 
 async def getWCatWallpaper(index=0):
     schemaNews = {
@@ -110,25 +120,33 @@ async def getWCatWallpaper(index=0):
 
     print(f"Success, {len(WCatNews)} news")
     print(json.dumps(WCatNews[index], indent=2, ensure_ascii=False))
-    print(json.dumps(WCatWallpapers, indent=2, ensure_ascii=False))
 
-    for Wallpapers in WCatWallpapers:
-        for wallpaper in Wallpapers["wallpaper"]:
-            # 判斷是否是相對路徑模式
-            url = None
-            if wallpaper["image"].startswith("./") :
-                url = f"https://colopl.co.jp{WCatNews[index]["link"]}{wallpaper["image"][2:]}"
-            else :
-                url = f"https://colopl.co.jp{wallpaper["image"]}"
-            download_file(url, save_directory=f"downloads\\{sanitize_filename(WCatNews[index]["title"])}")
-            print(url)
+    if is_line_equal("news.txt", sanitize_filename(WCatNews[index]["title"])) and index == 0:
+        print("已下載過，未更新")
+        None
+    else:
+        if index == 0: write_single_line("news.txt", sanitize_filename(WCatNews[index]["title"]))
+        print(json.dumps(WCatWallpapers, indent=2, ensure_ascii=False))
+        for Wallpapers in WCatWallpapers:
+            for wallpaper in Wallpapers["wallpaper"]:
+                # 判斷是否是相對路徑模式
+                url = None
+                if wallpaper["image"].startswith("./"):
+                    url = f"https://colopl.co.jp{WCatNews[index]["link"]}{wallpaper["image"][2:]}"
+                else:
+                    url = f"https://colopl.co.jp{wallpaper["image"]}"
+                download_file(
+                    url,
+                    save_directory=f"downloads\\{sanitize_filename(WCatNews[index]["title"])}",
+                )
+
 
 if __name__ == "__main__":
-    
+
     parser = argparse.ArgumentParser(description="Fetch wallpaper by ID")
     parser.add_argument(
-        "-id", type=int, required=False, help="The ID of the wallpaper to fetch"
+        "-id", type=int, required=True, help="The ID of the wallpaper to fetch"
     )
     args = parser.parse_args()
-    
+
     asyncio.run(getWCatWallpaper(args.id))
