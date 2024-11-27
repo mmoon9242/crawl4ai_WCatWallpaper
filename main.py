@@ -11,11 +11,6 @@ import requests
 import argparse
 
 
-def write_single_line(file_path, content):
-    with open(file_path, "w", encoding="utf-8") as file:
-        file.write(content)
-
-
 def is_line_equal(file_path, target_string):
     try:
         with open(file_path, "r", encoding="utf-8") as file:
