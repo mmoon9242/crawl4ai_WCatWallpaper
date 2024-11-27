@@ -150,9 +150,15 @@ async def getWCatWallpaper(WCatNewsUrl, startIndex=None, endIndex=None):
 
         print(json.dumps(WCatNews[0]["news"][index], indent=2, ensure_ascii=False))
 
+        WCatPageUrl = None
+        # FIXME: URL會串錯
+        if WCatNews[0]["news"][index]["link"].startswith("http://") :
+            WCatPageUrl = WCatNews[0]["news"][index]["link"]
+        else :
+            WCatPageUrl = f'https://colopl.co.jp{WCatNews[0]["news"][index]["link"]}'
         async with AsyncWebCrawler(verbose=True) as crawler:
             result = await crawler.arun(
-                url=f'https://colopl.co.jp{WCatNews[0]["news"][index]["link"]}',
+                url=WCatPageUrl,
                 extraction_strategy=extractionStrategyWallpapers,
                 bypass_cache=True,
             )
