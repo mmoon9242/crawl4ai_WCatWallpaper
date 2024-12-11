@@ -10,6 +10,7 @@ import requests
 
 import argparse
 
+DEBUG = True
 
 def find_similar_dirs(base_dir, search_name):
     """
@@ -53,16 +54,18 @@ def download_file(url, save_directory="."):
         os.makedirs(save_directory)
 
     response = requests.get(url, stream=True)
+    print(f"Download... {url}")
     if response.status_code == 200:
         with open(save_path, "wb") as file:
             for chunk in response.iter_content(chunk_size=8192):
                 file.write(chunk)
-        print(f"Download: {url}")
+        print(f"Downloaded: {url}")
     else:
         print(f"Download error, error code: {response.status_code}")
 
 
 async def getWCatWallpaper(WCatNewsUrl, startIndex=None, endIndex=None):
+    print("WCat News Url: ", WCatNewsUrl)
     # NOTE: 先處理endIndex
     if endIndex != None:
         endIndex += 1
@@ -111,14 +114,14 @@ async def getWCatWallpaper(WCatNewsUrl, startIndex=None, endIndex=None):
     extractionStrategyNews = JsonCssExtractionStrategy(schemaNews, verbose=True)
     schemaWallpapers = {
         "name": "WCat Wallpapers",
-        "baseSelector": "li.p-wallpaper__listItem, div.wpArea li, li.motion.fadeInUp, li.wallpaper__listItem",
+        "baseSelector": "li.p-wallpaper__listItem, div.wpArea li, li.motion, li.wallpaper__listItem, .wp__list li, .fade_Up li, .wrap ul, li.c-wallpaperList__item, li.list__item",
         "fields": [
             {
                 "name": "wallpaper",
                 "type": "nested_list",
-                "selector": "li.p-wallpaper__linksItem, div.link p, div.wallpaper__download p",
+                "selector": "li.p-wallpaper__linksItem, div.link p, div.wallpaper__download p, .list__item-downloadBtn p, .wallpaper__listDownload p, .downloadBtn, .c-wallpaperList__download p, .wp__linkWrap p, .item__link li",
                 "fields": [
-                    {"name": "size", "selector": "a", "type": "text"},
+                    {"name": "size", "selector": "a, a p", "type": "text"},
                     {
                         "name": "image",
                         "selector": "a",
@@ -145,22 +148,25 @@ async def getWCatWallpaper(WCatNewsUrl, startIndex=None, endIndex=None):
 
     # print(json.dumps(WCatNews[0]["news"], indent=2, ensure_ascii=False))
     print(f'Success, {len(WCatNews[0]["news"])} news')
+    print(json.dumps(WCatNews[0]["news"], indent=2, ensure_ascii=False))
 
     for index in range(startIndex, endIndex):
 
+        print("\n\n\n\n\n")
         print(json.dumps(WCatNews[0]["news"][index], indent=2, ensure_ascii=False))
 
         WCatPageUrl = None
-        # FIXME: URL會串錯
-        # TODO: 判斷字串是否是完整網址
-        if WCatNews[0]["news"][index]["link"].startswith("https://") :
+        # DONE: 修正URL會串錯
+        # DONE: 修正http://開頭無法抓取到的問題
+        if WCatNews[0]["news"][index]["link"].startswith(("https://", "http://")) :
             # FIXME: 有的網址最後一個字元是/，須要移除
-            # TODO: 如果是，就直接寫入WCatPageUrl
+            # NOTE: 如果是完整網址，就直接寫入WCatPageUrl
             WCatPageUrl = WCatNews[0]["news"][index]["link"]
-            # TODO: 判斷WCatPageUrl有沒有包含C社網域
+            # NOTE: 判斷WCatPageUrl有沒有包含C社網域
             if not WCatPageUrl.startswith("https://colopl.co.jp") :
-                # TODO: 如果沒有就break
-                break
+                # DONE: 修正使用break，會跳出整個迴圈，須改用continue
+                print("不是C社網址")
+                continue
         else :
             WCatPageUrl = f'https://colopl.co.jp{WCatNews[0]["news"][index]["link"]}'
         
@@ -177,23 +183,38 @@ async def getWCatWallpaper(WCatNewsUrl, startIndex=None, endIndex=None):
 
         if find_similar_dirs(f"downloads\\", savePath):
             print("已下載過，如要重新下載請刪除該目錄")
-            break
-        else:
+            # DONE: 修正使用break，會跳出整個迴圈，須改用continue
+            continue
 
-            print(json.dumps(WCatWallpapers, indent=2, ensure_ascii=False))
+        print(json.dumps(WCatWallpapers, indent=2, ensure_ascii=False))
 
-            for Wallpapers in WCatWallpapers:
-                for wallpaper in Wallpapers["wallpaper"]:
-                    # NOTE: 判斷是否是相對路徑模式
-                    url = None
-                    if wallpaper["image"].startswith("./"):
+        for Wallpapers in WCatWallpapers:
+            for wallpaper in Wallpapers["wallpaper"]:
+                # NOTE: 判斷是否是相對路徑模式
+                url = None
+                
+                if wallpaper["image"].startswith("./"):
+                    # DONE: 預防性修正網址串接錯誤問題
+                    # NOTE: 如果有找到./，那就是使用相對目錄
+                    if WCatNews[0]["news"][index]["link"].startswith("https://colopl.co.jp"):
+                        # NOTE: 如果開頭有網域了，就不再加一次
+                        url = f'{WCatNews[0]["news"][index]["link"]}{wallpaper["image"][2:]}'
+                    else :
+                        # NOTE: 反之
                         url = f'https://colopl.co.jp{WCatNews[0]["news"][index]["link"]}{wallpaper["image"][2:]}'
-                    else:
-                        url = f'https://colopl.co.jp{wallpaper["image"]}'
-                    download_file(
-                        url,
-                        save_directory=f"downloads\\{savePath}",
-                    )
+                elif wallpaper["image"].startswith("/"):
+                    # NOTE: 如果有找到/，那就是基於網址的絕對目錄
+                    url = f'https://colopl.co.jp{wallpaper["image"]}'
+                else:
+                    # DONE: 修正網址串接錯誤問題
+                    # NOTE: 如果開頭什麼都沒找到，那就是基於目前目錄的相對目錄，與./處理方式相同，但不需要去除前兩個字元
+                    if WCatNews[0]["news"][index]["link"].startswith("https://colopl.co.jp"):
+                        # NOTE: 如果開頭有網域了，就不再加一次
+                        url = f'{WCatNews[0]["news"][index]["link"]}{wallpaper["image"]}'
+                    else :
+                        # NOTE: 反之
+                        url = f'https://colopl.co.jp{WCatNews[0]["news"][index]["link"]}{wallpaper["image"]}'
+                download_file(url,save_directory=f"downloads\\{savePath}")
 
 
 if __name__ == "__main__":
@@ -232,10 +253,16 @@ if __name__ == "__main__":
         print(f"Code list mode")
         WCatNewsUrlList = [
             # "https://colopl.co.jp/shironekoproject/news",
-            "https://colopl.co.jp/shironekoproject/news/index_2.php",
-            "https://colopl.co.jp/shironekoproject/news/index_3.php",
-            "https://colopl.co.jp/shironekoproject/news/index_4.php",
-            "https://colopl.co.jp/shironekoproject/news/index_5.php",
+            # "https://colopl.co.jp/shironekoproject/news/index_2.php",
+            # "https://colopl.co.jp/shironekoproject/news/index_3.php",
+            # "https://colopl.co.jp/shironekoproject/news/index_4.php",
+            # "https://colopl.co.jp/shironekoproject/news/index_5.php",
+            # "https://colopl.co.jp/shironekoproject/news/index_6.php",
+            # "https://colopl.co.jp/shironekoproject/news/index_7.php",
+            # "https://colopl.co.jp/shironekoproject/news/index_8.php",
+            # "https://colopl.co.jp/shironekoproject/news/index_9.php",
+            # "https://colopl.co.jp/shironekoproject/news/index_10.php",
+            "https://colopl.co.jp/shironekoproject/news/index_11.php",
         ]
         for WCatNewsUrl in WCatNewsUrlList:
             asyncio.run(getWCatWallpaper(WCatNewsUrl, 0, 20))
